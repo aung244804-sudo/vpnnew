@@ -1,6 +1,6 @@
 import { useLanguage } from '@/components/client/LanguageProvider';
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Star, Plus, ShieldAlert } from 'lucide-react';
+import { RefreshCw, Star, Plus, Check, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { countryName, directorySource, fetchDirectory, ratingsKey, readRatings, sortDirectory, type DirectorySort, type Ratings } from '@/lib/server-directory';
 import type { Protocol, ServerNode } from '@/lib/v2ray';
@@ -37,10 +37,13 @@ export function PublicDirectory({ onImport, protocols }: { onImport: (node: Serv
     <p className="directory-meta">{t("Device latency unmeasured · Android VPN service unavailable. Country feeds reflect the source’s location claims.")}</p>
     {error && <p className="ai-error" role="alert">{t(error)}</p>}
     {!busy && !error && !visible.length && <p className="directory-meta">{t("No matching supported servers.")}</p>}
-    <div className="directory-list">{visible.slice(0, limit).map(node => <div className="directory-row" key={node.id}>
-      <div className="directory-node"><span>{node.flag}</span><div><strong>{node.name}</strong><small>{node.country} · {t('UNTRUSTED')} · {t('Unmeasured')}</small></div><Button variant="outline" size="icon" className="keycap" title={t("Import server")} aria-label={`Import ${node.name}`} disabled={imported.includes(node.id)} onClick={() => { onImport(node); setImported(old => [...old, node.id]); }}><Plus /></Button></div>
-      <div className="directory-rating"><span>{t("My rating")}</span>{[1,2,3,4,5].map(value => <Button variant="ghost" size="icon" key={value} className={value <= (ratings[node.id] || 0) ? 'rating-on' : ''} aria-label={`Rate ${node.name} ${value} stars`} aria-pressed={ratings[node.id] === value} title={`${value} stars`} onClick={() => rate(node.id, value)}><Star /></Button>)}</div>
-    </div>)}</div>
+    <div className="directory-list">{visible.slice(0, limit).map(node => {
+      const isImported = imported.includes(node.id);
+      return <div className="directory-row" key={node.id}>
+        <div className="directory-node"><span>{node.flag}</span><div><strong>{node.name}</strong><small>{node.country} · {t('UNTRUSTED')} · {t('Unmeasured')}</small></div><Button variant="outline" size="icon" className="keycap" title={isImported ? t("Server imported") : t("Import server")} aria-label={isImported ? `${node.name} (${t("Imported")})` : `${t("Import server")} ${node.name}`} disabled={isImported} onClick={() => { onImport(node); setImported(old => [...old, node.id]); }}>{isImported ? <Check size={16} /> : <Plus />}</Button></div>
+        <div className="directory-rating"><span>{t("My rating")}</span>{[1,2,3,4,5].map(value => <Button variant="ghost" size="icon" key={value} className={value <= (ratings[node.id] || 0) ? 'rating-on' : ''} aria-label={`Rate ${node.name} ${value} stars`} aria-pressed={ratings[node.id] === value} title={`${value} stars`} onClick={() => rate(node.id, value)}><Star /></Button>)}</div>
+      </div>;
+    })}</div>
     {visible.length > limit && <Button variant="outline" className="keycap" onClick={() => setLimit(old => old + 30)}>{t('SHOW MORE')} ({visible.length - limit})</Button>}
   </div>;
 }
