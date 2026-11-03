@@ -144,6 +144,8 @@ export const myanmar: Record<string, string> = {
   "Device latency unmeasured · Android VPN service unavailable. Country feeds reflect the source’s location claims.": "တုံ့ပြန်ချိန် မတိုင်းတာရသေးပါ · Android VPN ဝန်ဆောင်မှု မရှိသေးပါ။ နိုင်ငံစာရင်းများသည် မူရင်းရင်းမြစ်၏ ဖော်ပြချက်များသာ ဖြစ်သည်။",
   "No matching supported servers.": "ကိုက်ညီသည့် ဆာဗာ မရှိပါ။",
   "Import server": "ဆာဗာ ထည့်သွင်းရန်",
+  "Server imported": "ဆာဗာ ထည့်သွင်းပြီး",
+  "Imported": "ထည့်သွင်းပြီး",
   "UNTRUSTED": "မယုံကြည်ရသေး",
   "SHOW MORE": "နောက်ထပ် ပြရန်",
   "supported": "ခု ပံ့ပိုးသည်",
