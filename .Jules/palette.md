@@ -1,0 +1,3 @@
+## 2026-11-01 - Reusable input clear pattern across search and purpose inputs
+**Learning:** In text inputs where users frequently filter or test values (such as search queries or connection purpose links), pairing an icon prefix with a conditional clear button (`<X />`) improves usability and rapid iteration. For accessibility and localization, the clear button must always provide an accessible, translated `aria-label` (e.g. `t("Clear search")` and `t("Clear purpose")`), maintain minimum touch targets (28px with padding in compact forms), and use semantic button elements.
+**Action:** Whenever adding or styling search/filter inputs in this design system, wrap the input in a relative container with an icon prefix and provide a localized, accessible icon-only clear button.
