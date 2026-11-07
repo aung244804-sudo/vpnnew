@@ -1,6 +1,6 @@
 import { useLanguage } from '@/components/client/LanguageProvider';
-import { ShieldCheck, Network, Download, Copy, LockKeyhole } from 'lucide-react';
-import { useState } from 'react';
+import { ShieldCheck, Network, Download, Copy, Check, LockKeyhole } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { type ClientSettings, type Protocol, type ServerNode, makeConfig } from '@/lib/v2ray';
@@ -8,8 +8,27 @@ import { type ClientSettings, type Protocol, type ServerNode, makeConfig } from 
 export function SettingsPanel({ settings, onChange, node, onOpenVpnSettings }: { settings: ClientSettings; onChange: (s: ClientSettings) => void; node: ServerNode | null; onOpenVpnSettings: () => void }) {
   const { t } = useLanguage();
   const [message, setMessage] = useState('');
+  const [copied, setCopied] = useState(false);
+  const copyTimeout = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeout.current) window.clearTimeout(copyTimeout.current);
+    };
+  }, []);
+
   const json = () => { if (!node) throw new Error('Select a server before exporting.'); return JSON.stringify(makeConfig(node, settings), null, 2); };
-  async function copy() { try { await navigator.clipboard.writeText(json()); setMessage('Configuration copied.'); } catch { setMessage('Clipboard unavailable. Use Export JSON instead.'); } }
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(json());
+      setMessage('Configuration copied.');
+      setCopied(true);
+      if (copyTimeout.current) window.clearTimeout(copyTimeout.current);
+      copyTimeout.current = window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setMessage('Clipboard unavailable. Use Export JSON instead.');
+    }
+  }
   function download() { const url = URL.createObjectURL(new Blob([json()], { type: 'application/json' })); const a = document.createElement('a'); a.href = url; a.download = 'aiv2ray-xray.json'; a.click(); URL.revokeObjectURL(url); setMessage('Configuration exported.'); }
   return <div className="tab-content"><div className="section-heading"><span><Network size={15} />{t("DEVICE & NETWORK")}</span><span className="micro-label">{t("LOCAL CONFIGURATION")}</span></div><section className="steel-tray settings-tray">
     <div className="setting-row"><div><strong><ShieldCheck size={16} />{t("Android VPN lockdown")}</strong><small>{t("Enable Always-on VPN and Block connections without VPN in Android system settings.")}</small></div><Button variant="outline" className="keycap" onClick={onOpenVpnSettings}>{t("OPEN ANDROID VPN SETTINGS")}</Button></div>
@@ -19,6 +38,6 @@ export function SettingsPanel({ settings, onChange, node, onOpenVpnSettings }: {
     <div className="setting-row"><div><strong>{t("Routing rules")}</strong><small>{t("Traffic distribution policy")}</small></div><select aria-label={t("Routing rules")} className="engraved-input setting-select" value={settings.routing} onChange={e => onChange({ ...settings, routing: e.target.value })}>{['Global', 'Bypass LAN', 'Bypass Mainland/Domestic', 'Rule-based'].map(v => <option key={v} value={v}>{t(v)}</option>)}</select></div>
     <div className="proxy-ports"><span><LockKeyhole size={14} />{t("EXPORTED PROXY PORTS")}</span><span>SOCKS5 <b>10808</b></span><span>HTTP <b>10809</b></span></div><p className="settings-note">{t("The Android VPN service applies DNS and routing while connected. System lockdown is controlled by Android; enable Always-on VPN and Block connections without VPN there for protection after the service stops.")}</p>
   </section>
-    <div className="export-section"><Button className="copper-button" disabled={!node} onClick={download}><Download />{t("EXPORT XRAY JSON")}</Button><Button variant="outline" className="keycap" disabled={!node} onClick={copy}><Copy />{t("COPY CONFIGURATION")}</Button></div>{message && <p role="status" className="text-primary text-sm">{t(message)}</p>}
+    <div className="export-section"><Button className="copper-button" disabled={!node} onClick={download}><Download />{t("EXPORT XRAY JSON")}</Button><Button variant="outline" className="keycap" disabled={!node} onClick={copy} aria-live="polite">{copied ? <Check className="text-online" size={16} /> : <Copy size={16} />}{copied ? t("COPIED!") : t("COPY CONFIGURATION")}</Button></div>{message && <p role="status" className="text-primary text-sm">{t(message)}</p>}
   </div>;
 }

@@ -72,6 +72,7 @@ export const myanmar: Record<string, string> = {
   'The Android VPN service applies DNS and routing while connected. System lockdown is controlled by Android; enable Always-on VPN and Block connections without VPN there for protection after the service stops.': 'ချိတ်ဆက်နေစဉ် Android VPN ဝန်ဆောင်မှုက DNS နှင့် လမ်းကြောင်းများကို အသုံးပြုသည်။ ဝန်ဆောင်မှုရပ်ပြီးနောက် ကာကွယ်ရန် Android ဆက်တင်တွင် Always-on VPN နှင့် Block connections without VPN ကို ဖွင့်ပါ။',
   'APPEARANCE': 'အသွင်အပြင်', 'Brushed Steel & Burnished Copper': 'သံမဏိနှင့် ကြေးနီ အသွင်အပြင်', 'PRECISION INSTRUMENT / DARK': 'တိုင်းတာကိရိယာ / အမှောင်',
   'EXPORT XRAY JSON': 'XRAY JSON ထုတ်ယူရန်', 'COPY CONFIGURATION': 'CONFIGURATION ကူးယူရန်', 'Select a server before exporting.': 'မထုတ်ယူမီ ဆာဗာတစ်ခုကို ရွေးပါ။',
+  'COPIED!': 'ကူးယူပြီး!',
   'Configuration copied.': 'Configuration ကူးယူပြီး။', 'Clipboard unavailable. Use Export JSON instead.': 'Clipboard ကို သုံး၍မရပါ။ JSON ထုတ်ယူမှုကို သုံးပါ။', 'Configuration exported.': 'Configuration ထုတ်ယူပြီး။',
   'CLIENT DIAGNOSTICS': 'စနစ်အခြေအနေ', 'SYSTEM INFORMATION': 'စနစ်အချက်အလက်', 'App version': 'အက်ပ်ဗားရှင်း', 'Client mode': 'အသုံးပြုမှုမုဒ်', 'NATIVE ANDROID VPN': 'NATIVE ANDROID VPN', 'WEB UI · VPN OFFLINE': 'WEB UI · VPN မချိတ်ဆက်ထားပါ', '2.4.1 / ANDROID': '2.4.1 / ANDROID', '2.4.1 / WEB UI': '2.4.1 / WEB UI',
   'Native VPN service': 'Native VPN ဝန်ဆောင်မှု', 'AVAILABLE': 'အသင့်ရှိသည်', 'Supported protocols': 'ပံ့ပိုးသည့် protocol များ', 'Client IP': 'စက် IP', 'Server exit IP': 'ဆာဗာထွက်ပေါက် IP', 'Not measured': 'မတိုင်းတာရသေး',
