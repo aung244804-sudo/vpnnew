@@ -56,6 +56,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -73,13 +75,17 @@ import kotlin.math.sin
 import java.util.Locale
 
 private val DeepInk = Color(0xFFF5F6F8)
-private val Shadow = Color(0xFFEBEEF1)
+private val Shadow = Color(0xFFF3F1FA)
 private val Steel = Color(0xFFE3E7EB)
 private val Tray = Color(0xFFF9FAFB)
-private val Bevel = Color(0xFFB8C0C8)
-private val Copper = Color(0xFFB65F32)
-private val CopperLight = Color(0xFFF0D7BC)
-private val CopperDark = Color(0xFF7A3D1B)
+private val Bevel = Color(0xFFD9D2F0)
+private val Copper = Color(0xFF7C4DFF)
+private val CopperLight = Color(0xFFD9CCFF)
+private val CopperDark = Color(0xFF4A2BB8)
+private val GlassHi = Color(0xCCFFFFFF)
+private val GlassLo = Color(0x99F1ECFF)
+private val NeonCyan = Color(0xFF22D3EE)
+private val NeonPink = Color(0xFFEC4899)
 private val Engrave = Color(0xFF252A30)
 private val EngraveLight = Color(0xFF68717B)
 private val Online = Color(0xFF4CAF50)
@@ -123,7 +129,9 @@ internal fun NetconDashboard(
     var serverDialog by rememberSaveable { mutableStateOf(false) }
     var locationDialog by rememberSaveable { mutableStateOf(false) }
     var purpose by rememberSaveable { mutableStateOf("") }
-    var apiKey by remember { mutableStateOf("") }
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    val keyPrefs = remember { appContext.getSharedPreferences("gemini", android.content.Context.MODE_PRIVATE) }
+    var apiKey by remember { mutableStateOf(keyPrefs.getString("api_key", "") ?: "") }
     var recommendationMessage by remember { mutableStateOf("") }
     var recommendationBusy by remember { mutableStateOf(false) }
     var dns by rememberSaveable { mutableStateOf("1.1.1.1") }
@@ -144,7 +152,7 @@ internal fun NetconDashboard(
     fun askGemini() {
         if (recommendationBusy) return
         if (apiKey.isBlank()) {
-            recommendationMessage = "Enter your Gemini API key. It stays in this screen session."
+            recommendationMessage = "Paste your Gemini API key, then tap APPLY."
             return
         }
         if (Regex("(?i)^(vmess|vless|trojan|ss)://").containsMatchIn(purpose.trim())) {
@@ -173,6 +181,8 @@ internal fun NetconDashboard(
         }
     }
 
+    val glowAnim = androidx.compose.animation.core.rememberInfiniteTransition(label = "glow")
+    val glowShift by glowAnim.animateFloat(0f, 1040f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(if (vpnStatus.state == "connected") 1800 else 4200, easing = androidx.compose.animation.core.LinearEasing)), label = "shift")
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -201,9 +211,9 @@ internal fun NetconDashboard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
                     .background(
-                        Brush.linearGradient(listOf(Shadow, Steel, Bevel, Steel, Shadow)),
+                        Brush.linearGradient(listOf(GlassHi, GlassLo, GlassHi)),
                     )
-                    .border(2.dp, Bevel, RoundedCornerShape(8.dp))
+                    .border(2.dp, Brush.linearGradient(listOf(Copper, NeonCyan, NeonPink, Copper), start = Offset(glowShift, 0f), end = Offset(glowShift + 520f, 520f), tileMode = TileMode.Repeated), RoundedCornerShape(8.dp))
                     .padding(horizontal = 13.dp, vertical = 15.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -456,9 +466,26 @@ private fun ConnectionScreen(
                 RecessedInput(
                     value = apiKey,
                     onValueChange = onApiKeyChange,
-                    placeholder = "Gemini API key · session only",
+                    placeholder = "Paste Gemini API key (AIza…)",
                     secure = true,
                 )
+                val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                var keyNote by remember { mutableStateOf("") }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Keycap("PASTE", Modifier.weight(1f)) {
+                        val text = clipboard.getText()?.text?.trim().orEmpty()
+                        if (text.isNotEmpty()) { onApiKeyChange(text); keyNote = "Key pasted · tap APPLY to save" } else keyNote = "Clipboard is empty"
+                    }
+                    Keycap("APPLY", Modifier.weight(1f), selected = true) {
+                        ctx.getSharedPreferences("gemini", android.content.Context.MODE_PRIVATE).edit().putString("api_key", apiKey.trim()).apply()
+                        keyNote = if (apiKey.isBlank()) "Key cleared" else "Gemini key applied · saved on this device"
+                    }
+                    Keycap("GET KEY", Modifier.weight(1f)) {
+                        ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://aistudio.google.com/app/apikey")).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                }
+                if (keyNote.isNotEmpty()) Text(keyNote, color = CopperDark, fontSize = 8.sp, fontFamily = FontFamily.Monospace)
                 CopperButton(
                     if (recommendationBusy) "ASKING GEMINI…" else "ASK GEMINI · FIND FREE SERVER",
                     Modifier.fillMaxWidth(),
@@ -494,7 +521,7 @@ private fun ConnectionScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
-                .background(Brush.verticalGradient(listOf(Color(0xFF9BA2AA), Color(0xFF707881), Color(0xFF444A51))))
+                .background(Brush.verticalGradient(listOf(GlassHi, GlassLo)))
                 .border(1.dp, Bevel, RoundedCornerShape(6.dp))
                 .clickable(onClick = onOpenServers)
                 .padding(horizontal = 13.dp, vertical = 12.dp),
@@ -503,7 +530,7 @@ private fun ConnectionScreen(
         ) {
             Box(
                 Modifier.size(width = 39.dp, height = 37.dp)
-                    .background(Brush.verticalGradient(listOf(Bevel, Steel)), RoundedCornerShape(4.dp))
+                    .background(Brush.verticalGradient(listOf(Color.White, CopperLight)), RoundedCornerShape(4.dp))
                     .border(1.dp, Shadow, RoundedCornerShape(4.dp)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -715,7 +742,7 @@ private fun PublicServerDialog(
     Dialog(onDismissRequest = onDismiss) {
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(7.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFFADB3B9), Color(0xFF626A72), Color(0xFF383D43))))
+                .background(Brush.linearGradient(listOf(Color(0xF2FFFFFF), Color(0xEEF3EEFF))))
                 .border(1.dp, Bevel, RoundedCornerShape(7.dp)).padding(16.dp)
                 .heightIn(max = 680.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(9.dp),
@@ -749,7 +776,7 @@ private fun PublicServerDialog(
             visibleNodes.forEach { node ->
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp))
-                        .background(Brush.verticalGradient(listOf(Color(0xFF90979E), Color(0xFF737B83))))
+                        .background(Brush.verticalGradient(listOf(GlassHi, GlassLo)))
                         .border(1.dp, Bevel, RoundedCornerShape(4.dp)).padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -861,7 +888,7 @@ private fun LocationDialog(
     Dialog(onDismissRequest = onDismiss) {
         Column(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(7.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFFADB3B9), Color(0xFF626A72), Color(0xFF383D43))))
+                .background(Brush.linearGradient(listOf(Color(0xF2FFFFFF), Color(0xEEF3EEFF))))
                 .border(1.dp, Bevel, RoundedCornerShape(7.dp)).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -893,7 +920,7 @@ private fun LocationDialog(
 private fun MetalPanel(content: @Composable () -> Unit) {
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFFB3B8BD), Color(0xFF858D95), Color(0xFF646C74), Color(0xFF9DA4AA))))
+            .background(Brush.linearGradient(listOf(GlassHi, GlassLo, GlassHi)))
             .border(1.dp, Bevel, RoundedCornerShape(6.dp))
             .padding(13.dp),
     ) {
@@ -912,10 +939,10 @@ private fun RecessedInput(
 ) {
     Box(
         modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF565D64), Color(0xFF767E86))))
+            .background(Brush.verticalGradient(listOf(Color(0xFFF7F5FF), Color.White)))
             .border(1.dp, Shadow, RoundedCornerShape(4.dp)).padding(horizontal = 10.dp, vertical = 10.dp),
     ) {
-        if (value.isEmpty()) Text(placeholder, color = Color(0xFF3D4248), fontSize = 11.sp)
+        if (value.isEmpty()) Text(placeholder, color = EngraveLight, fontSize = 11.sp)
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -932,7 +959,7 @@ private fun RecessedInput(
 private fun Keycap(label: String, modifier: Modifier = Modifier, selected: Boolean = false, onClick: () -> Unit) {
     Box(
         modifier.clip(RoundedCornerShape(4.dp))
-            .background(Brush.verticalGradient(if (selected) listOf(Color(0xFFC4C8CB), Color(0xFF8A9299)) else listOf(Color(0xFFA4ABB1), Color(0xFF777F87))))
+            .background(Brush.verticalGradient(if (selected) listOf(CopperLight, Color.White) else listOf(GlassHi, GlassLo)))
             .border(1.dp, if (selected) CopperDark else Bevel, RoundedCornerShape(4.dp))
             .clickable(onClick = onClick).padding(horizontal = 5.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center,
@@ -951,7 +978,7 @@ private fun CopperButton(label: String, modifier: Modifier = Modifier, onClick: 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Text(label, color = Color(0xFF27160C), fontFamily = FontFamily.Monospace, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 9.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -961,7 +988,7 @@ private fun AnalogGauge(label: String, value: String, unit: String, modifier: Mo
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
             Canvas(Modifier.fillMaxSize().padding(3.dp)) {
                 val radius = size.minDimension / 2f - 3.dp.toPx()
-                drawCircle(Brush.radialGradient(listOf(Color(0xFFE2E4E5), Color(0xFF858D95), Color(0xFF565E65))), radius)
+                drawCircle(Brush.radialGradient(listOf(Color.White, CopperLight, Copper)), radius)
                 drawCircle(Shadow, radius * .88f)
                 drawArc(CopperDark, 135f, 270f, false, style = Stroke(width = 2.dp.toPx()), topLeft = Offset(center.x - radius * .74f, center.y - radius * .74f), size = androidx.compose.ui.geometry.Size(radius * 1.48f, radius * 1.48f))
                 for (tick in 0..24) {
@@ -985,7 +1012,7 @@ private fun AnalogGauge(label: String, value: String, unit: String, modifier: Mo
                 drawCircle(CopperLight, radius = 1.7.dp.toPx())
             }
             Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(value, color = CopperLight, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                Text(value, color = CopperDark, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
                 Text(unit, color = EngraveLight, fontSize = 7.sp, fontFamily = FontFamily.Monospace)
             }
         }
@@ -997,19 +1024,21 @@ private fun AnalogGauge(label: String, value: String, unit: String, modifier: Mo
 private fun PowerControl(state: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val active = state == "connected"
     val connecting = state == "connecting"
+    val breathAnim = androidx.compose.animation.core.rememberInfiniteTransition(label = "breath")
+    val breath by breathAnim.animateFloat(.35f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1600), androidx.compose.animation.core.RepeatMode.Reverse), label = "breath")
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             Modifier.size(92.dp).clip(CircleShape)
-                .background(Brush.radialGradient(listOf(Color(0xFFD5D9DC), Color(0xFF828A92), Color(0xFF343A40))))
-                .border(3.dp, if (active || connecting) Copper else Bevel, CircleShape)
+                .background(Brush.radialGradient(listOf(Color.White, CopperLight, Copper.copy(alpha = .55f))))
+                .border(3.dp, if (active) Online.copy(alpha = breath) else Copper.copy(alpha = breath), CircleShape)
                 .padding(8.dp)
                 .clip(CircleShape)
-                .background(Brush.radialGradient(listOf(Color(0xFF8A9299), Color(0xFF3B4147), Shadow)))
-                .border(1.dp, Color(0xFFB8BEC3), CircleShape)
+                .background(Brush.radialGradient(listOf(Color.White, GlassLo, CopperLight)))
+                .border(1.dp, Color.White, CircleShape)
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.PowerSettingsNew, contentDescription = if (active) "Disconnect VPN" else "Connect VPN", tint = if (active || connecting) Copper else CopperDark, modifier = Modifier.size(39.dp))
+            Icon(Icons.Filled.PowerSettingsNew, contentDescription = if (active) "Disconnect VPN" else "Connect VPN", tint = if (active) Online else Copper, modifier = Modifier.size(39.dp))
         }
         Spacer(Modifier.height(8.dp))
         Text(
